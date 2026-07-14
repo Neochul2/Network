@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>TCP&sol;IP &#xb124;&#xd2b8;&#xc6cc;&#xd06c;</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <span id="markdown-mermaid" aria-hidden="true" data-config="{&quot;darkModeTheme&quot;:&quot;vscode&quot;,&quot;lightModeTheme&quot;:&quot;vscode&quot;,&quot;maxTextSize&quot;:50000,&quot;clickDrag&quot;:&quot;alt&quot;,&quot;showControls&quot;:&quot;onHoverOrFocus&quot;,&quot;resizable&quot;:true,&quot;maxHeight&quot;:&quot;&quot;}"></span>
+				<h1 id="tcpip-네트워크">TCP/IP 네트워크</h1>
+<h1 id="part-1-왜-전송계층transport-layer이-필요한가">PART 1. 왜 전송계층(Transport Layer)이 필요한가?</h1>
+<blockquote>
+<p><strong>학습 목표</strong></p>
+<ul>
+<li>전송계층이 필요한 이유를 이해한다.</li>
+<li>IP 계층만으로는 해결할 수 없는 문제를 설명할 수 있다.</li>
+<li>전송계층의 주요 역할을 이해한다.</li>
+<li>TCP와 UDP가 등장한 배경을 이해한다.</li>
+</ul>
+</blockquote>
+<hr>
+<h1 id="왜-전송계층을-먼저-배우는가">왜 전송계층을 먼저 배우는가?</h1>
+<p>TCP/IP를 처음 공부하는 학생들은 대부분 TCP와 UDP의 특징부터 외우기 시작합니다.</p>
+<p>하지만 그렇게 공부하면</p>
+<ul>
+<li>왜 TCP가 필요한지</li>
+<li>왜 UDP가 존재하는지</li>
+<li>왜 ACK가 필요한지</li>
+<li>왜 Sliding Window가 등장하는지</li>
+</ul>
+<p>를 이해하기 어렵습니다.</p>
+<p>모든 기술은 어떤 문제를 해결하기 위해 만들어졌습니다.</p>
+<p>전송계층도 마찬가지입니다.</p>
+<p>따라서 이 장에서는 TCP나 UDP를 배우기 전에,</p>
+<p><strong>왜 전송계층이 필요한가?</strong></p>
+<p>부터 이해합니다.</p>
+<hr>
+<h1 id="인터넷에서-데이터는-어떻게-전달될까">인터넷에서 데이터는 어떻게 전달될까?</h1>
+<p>우리가 인터넷을 사용할 때는 다양한 프로그램이 동시에 동작합니다.</p>
+<p>예를 들어 하나의 컴퓨터에서는</p>
+<pre><code class="language-text">Chrome
+
+Discord
+
+Steam
+
+Zoom
+
+Outlook
+</code></pre>
+<p>모두 동시에 인터넷을 사용할 수 있습니다.</p>
+<p>사용자는 단순히 프로그램을 실행하지만,</p>
+<p>운영체제는 각각의 프로그램이 보내는 데이터를 네트워크로 전달해야 합니다.</p>
+<hr>
+<h1 id="데이터는-계층을-따라-이동한다">데이터는 계층을 따라 이동한다.</h1>
+<p>응용프로그램에서 생성된 데이터는 아래와 같은 순서로 이동합니다.</p>
+<pre><code class="language-text">Application
+      │
+      ▼
+Transport
+      │
+      ▼
+Internet(IP)
+      │
+      ▼
+Data Link
+      │
+      ▼
+Physical
+</code></pre>
+<p>각 계층은 자신에게 맡겨진 역할만 수행합니다.</p>
+<p>그렇다면</p>
+<p>IP 계층은 어떤 역할을 할까요?</p>
+<hr>
+<h1 id="ip-계층의-역할">IP 계층의 역할</h1>
+<p>IP(Internet Protocol)는</p>
+<p>목적지 컴퓨터까지 데이터를 전달하는 역할을 합니다.</p>
+<p>예를 들어</p>
+<pre><code class="language-text">목적지
+
+192.168.0.10
+</code></pre>
+<p>이라는 IP 주소가 있다면,</p>
+<p>IP는 해당 컴퓨터를 찾아 데이터를 전달합니다.</p>
+<p>즉,</p>
+<p>IP는</p>
+<p><strong>컴퓨터(Host)를 찾는 역할</strong>을 수행합니다.</p>
+<hr>
+<h1 id="그런데-문제가-있다">그런데 문제가 있다.</h1>
+<p>IP는 컴퓨터까지는 찾아갈 수 있습니다.</p>
+<p>하지만</p>
+<p>컴퓨터 안에는 여러 프로그램이 동시에 실행되고 있습니다.</p>
+<p>예를 들어</p>
+<pre><code class="language-text">192.168.0.10
+
+├── Chrome
+├── Discord
+├── Steam
+├── Zoom
+└── Outlook
+</code></pre>
+<p>IP는</p>
+<p>이 중</p>
+<p>어느 프로그램이 데이터를 받아야 하는지</p>
+<p>알지 못합니다.</p>
+<hr>
+<h1 id="첫-번째-문제">첫 번째 문제</h1>
+<h2 id="프로그램을-구분할-수-없다">프로그램을 구분할 수 없다.</h2>
+<p>예를 들어</p>
+<p>웹 브라우저가 요청한 데이터를</p>
+<p>게임 프로그램이 받아버린다면</p>
+<p>정상적인 통신이 이루어질 수 없습니다.</p>
+<p>즉,</p>
+<p>컴퓨터까지 찾는 것만으로는</p>
+<p>통신이 완성되지 않습니다.</p>
+<p>프로그램까지 찾아야 합니다.</p>
+<hr>
+<h1 id="두-번째-문제">두 번째 문제</h1>
+<h2 id="데이터-손실">데이터 손실</h2>
+<p>인터넷에서는</p>
+<p>패킷이 전송되는 동안</p>
+<p>사라질 수 있습니다.</p>
+<pre><code class="language-text">1
+
+2
+
+3
+
+4
+
+5
+</code></pre>
+<p>전송했는데</p>
+<pre><code class="language-text">1
+
+2
+
+4
+
+5
+</code></pre>
+<p>만 도착할 수도 있습니다.</p>
+<p>IP는</p>
+<p>이 문제를 해결하지 않습니다.</p>
+<hr>
+<h1 id="세-번째-문제">세 번째 문제</h1>
+<h2 id="순서가-바뀔-수-있다">순서가 바뀔 수 있다.</h2>
+<p>네트워크 상황에 따라</p>
+<pre><code class="language-text">1
+
+2
+
+3
+
+4
+
+5
+</code></pre>
+<p>가</p>
+<pre><code class="language-text">3
+
+1
+
+5
+
+2
+
+4
+</code></pre>
+<p>순서로 도착할 수도 있습니다.</p>
+<p>IP는</p>
+<p>원래 순서대로 맞춰주지 않습니다.</p>
+<hr>
+<h1 id="네-번째-문제">네 번째 문제</h1>
+<h2 id="수신-여부를-알-수-없다">수신 여부를 알 수 없다.</h2>
+<p>송신자는</p>
+<p>데이터를 보냈지만</p>
+<p>상대방이 정말 받았는지</p>
+<p>확인할 수 없습니다.</p>
+<p>즉,</p>
+<p>성공 여부를 알 수 없습니다.</p>
+<hr>
+<h1 id="이러한-문제를-해결하는-계층">이러한 문제를 해결하는 계층</h1>
+<p>이러한 문제를 해결하기 위해</p>
+<p>전송계층(Transport Layer)이 존재합니다.</p>
+<p>전송계층은</p>
+<p>IP가 하지 못하는 기능을 제공합니다.</p>
+<p>대표적으로</p>
+<ul>
+<li>프로그램 구분</li>
+<li>신뢰성 제공</li>
+<li>데이터 순서 유지</li>
+<li>흐름 제어</li>
+<li>연결 관리</li>
+</ul>
+<p>를 수행합니다.</p>
+<hr>
+<h1 id="전송계층의-주요-역할">전송계층의 주요 역할</h1>
+<h2 id="1-프로그램-식별">1. 프로그램 식별</h2>
+<p>Port 번호를 이용하여</p>
+<p>데이터를 올바른 프로그램으로 전달합니다.</p>
+<p>예)</p>
+<ul>
+<li>HTTP → Port 80</li>
+<li>HTTPS → Port 443</li>
+<li>DNS → Port 53</li>
+</ul>
+<hr>
+<h2 id="2-신뢰성-제공">2. 신뢰성 제공</h2>
+<p>데이터가 손실되면</p>
+<p>다시 전송합니다.</p>
+<hr>
+<h2 id="3-데이터-순서-유지">3. 데이터 순서 유지</h2>
+<p>순서가 바뀌면</p>
+<p>원래 순서대로 재조립합니다.</p>
+<hr>
+<h2 id="4-흐름-제어">4. 흐름 제어</h2>
+<p>수신자가 처리할 수 있는 속도에 맞추어</p>
+<p>데이터를 전송합니다.</p>
+<hr>
+<h2 id="5-연결-관리">5. 연결 관리</h2>
+<p>필요한 경우</p>
+<p>통신 전에 연결을 생성하고</p>
+<p>통신이 끝나면 연결을 종료합니다.</p>
+<hr>
+<h1 id="osi-7계층에서의-위치">OSI 7계층에서의 위치</h1>
+<pre><code class="language-text">Application
+      │
+      ▼
+Transport
+      │
+      ▼
+Network(IP)
+      │
+      ▼
+Data Link
+      │
+      ▼
+Physical
+</code></pre>
+<p>전송계층은</p>
+<p>응용프로그램과</p>
+<p>IP 계층 사이에서</p>
+<p>통신을 관리하는 역할을 수행합니다.</p>
+<hr>
+<h1 id="전송계층의-대표-프로토콜">전송계층의 대표 프로토콜</h1>
+<p>전송계층에는 대표적으로</p>
+<p>두 개의 프로토콜이 있습니다.</p>
+<ul>
+<li>TCP</li>
+<li>UDP</li>
+</ul>
+<p>하지만</p>
+<p>두 프로토콜은</p>
+<p>목적이 서로 다릅니다.</p>
+<p>TCP는</p>
+<p>정확성을 우선합니다.</p>
+<p>UDP는</p>
+<p>속도를 우선합니다.</p>
+<hr>
+<h1 id="왜-tcp와-udp-두-개가-존재할까">왜 TCP와 UDP 두 개가 존재할까?</h1>
+<p>모든 인터넷 서비스가</p>
+<p>같은 특성을 요구하지는 않습니다.</p>
+<p>예를 들어</p>
+<p>파일 다운로드는</p>
+<p>데이터가 하나도 틀리면 안 됩니다.</p>
+<p>반면</p>
+<p>실시간 음성 통화는</p>
+<p>조금의 데이터 손실보다</p>
+<p>지연 시간이 더 큰 문제입니다.</p>
+<p>따라서</p>
+<p>전송계층은</p>
+<p>두 가지 다른 방식의 프로토콜을 제공합니다.</p>
+<ul>
+<li>TCP : 신뢰성 중심</li>
+<li>UDP : 속도 중심</li>
+</ul>
+<p>다음 장에서는</p>
+<p>두 프로토콜의 차이를 자세히 살펴보겠습니다.</p>
+<hr>
+<h1 id="시험-포인트">시험 포인트</h1>
+<ul>
+<li>전송계층은 OSI 7계층의 4계층이다.</li>
+<li>IP는 Host를 식별한다.</li>
+<li>Port는 Process를 식별한다.</li>
+<li>전송계층은 프로그램 간 통신을 담당한다.</li>
+<li>대표적인 전송계층 프로토콜은 TCP와 UDP이다.</li>
+</ul>
+<hr>
+<h1 id="자주-틀리는-부분">자주 틀리는 부분</h1>
+<p>❌ IP가 프로그램을 구분한다.</p>
+<p>→ 아니다.</p>
+<p>프로그램을 구분하는 것은 전송계층의 Port 번호이다.</p>
+<hr>
+<p>❌ TCP와 IP는 같은 계층이다.</p>
+<p>→ 아니다.</p>
+<p>TCP는 전송계층,</p>
+<p>IP는 네트워크 계층이다.</p>
+<hr>
+<h1 id="핵심-요약">핵심 요약</h1>
+<ul>
+<li>IP는 컴퓨터까지 데이터를 전달한다.</li>
+<li>전송계층은 프로그램까지 데이터를 전달한다.</li>
+<li>전송계층은 신뢰성, 순서 유지, 흐름 제어, 연결 관리 등을 담당한다.</li>
+<li>대표적인 전송계층 프로토콜은 TCP와 UDP이다.</li>
+</ul>
+<hr>
+<h1 id="다음-장">다음 장</h1>
+<p><strong>PART 2. TCP와 UDP</strong></p>
+
+            
+            
+        </body>
+        </html>
