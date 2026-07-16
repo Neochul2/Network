@@ -237,7 +237,7 @@ Sequence Number
 Acknowledgement Number
 
 Data Offset
-
+ 
 Reserved
 
 Control Bits(Flags)
