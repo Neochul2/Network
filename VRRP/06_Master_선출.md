@@ -10,45 +10,47 @@
 - Master 선출 과정을 설명할 수 있다.
 - Backup Router의 역할을 이해한다.
 - Failover 과정을 설명할 수 있다.
-- Preempt 기능을 이해한다.
+- VRRP의 전체 동작 절차를 이해한다.
 
 ---
 
 # Master 선출이란?
 
-VRRP 그룹에는 여러 대의 Router가 존재하지만
+VRRP 그룹에는 여러 대의 Router가 존재하지만 실제로 Gateway 역할을 수행하는 Router는 하나뿐이다.
 
-실제로 Gateway 역할을 수행하는 Router는
+이를 Master Router라고 하며, 나머지 Router는 Backup Router로 대기한다.
 
-단 하나뿐이다.
-
-이를
-
-Master Router
-
-라고 한다.
-
-나머지 Router는
-
-Backup Router
-
-로 대기한다.
+Master Router는 Priority 값을 비교하여 결정된다.
 
 ---
 
-# Master 선출 기준
+# ① 그룹 구성
 
-VRRP는
+동일한 VRID와 Virtual IP를 설정한 Router들이 하나의 VRRP 그룹을 형성한다.
 
-Priority 값을 비교하여
+```text
+Router A
 
-Master Router를 결정한다.
+VRID = 10
 
-Priority가 가장 높은 Router가
+↓
 
-Master가 된다.
+Router B
 
-예)
+VRID = 10
+
+↓
+
+VRRP Group
+```
+
+---
+
+# ② Priority 비교
+
+VRRP 그룹에 참여한 Router들은 Advertisement를 통해 Priority를 서로 비교한다.
+
+Priority가 가장 높은 Router가 Master가 된다.
 
 ```text
 Router A
@@ -59,304 +61,51 @@ Priority = 150
 
 Master
 
+------------------
 
 Router B
-
-Priority = 120
-
-↓
-
-Backup
-
-
-Router C
 
 Priority = 100
 
 ↓
 
 Backup
+
+------------------
+
+Router C
+
+Priority = 80
+
+↓
+
+Backup
 ```
 
 ---
 
-# Master 선출 과정
+# ③ Master 선출
 
-Router들이 동시에 VRRP 그룹에 참여하면
+Priority가 가장 높은 Router가 Master가 되고 나머지는 Backup 상태가 된다.
 
-다음 순서로 Master가 결정된다.
+Master Router는 다음 작업을 수행한다.
+
+- Virtual IP 유지
+- Virtual MAC 유지
+- ARP 응답
+- Packet 전달
+- Advertisement 전송
+
+---
+
+# ④ 정상 운영
+
+Master Router는 Virtual Gateway 역할을 수행하며 주기적으로 Advertisement Packet을 전송한다.
+
+Backup Router는 Advertisement를 계속 수신하면서 Master의 상태를 감시한다.
 
 ```text
-VRRP 그룹 생성
-
-↓
-
-Advertisement 수신
-
-↓
-
-Priority 비교
-
-↓
-
-가장 높은 Priority 선택
-
-↓
-
-Master 결정
-
-↓
-
-나머지는 Backup
-```
-
----
-
-# Master의 역할
-
-Master Router는
-
-Virtual Gateway 역할을 수행한다.
-
-Master가 수행하는 작업
-
-├─ Advertisement 전송
-
-├─ ARP 응답
-
-├─ Virtual MAC 사용
-
-├─ Packet 전달
-
-└─ Gateway 서비스 제공
-
----
-
-# Backup의 역할
-
-Backup Router는
-
-사용자 Packet을 전달하지 않는다.
-
-Master가 정상인지
-
-Advertisement Packet만 계속 감시한다.
-
-Backup이 수행하는 작업
-
-├─ Advertisement 수신
-
-├─ Timer 유지
-
-├─ Master 상태 감시
-
-└─ 장애 발생 시 Master 승격
-
----
-
-# 장애 발생(Failover)
-
-Master Router가 장애가 발생하면
-
-Advertisement Packet이 중단된다.
-
-Backup Router는
-
-Advertisement Timer가 만료되면
-
-Master가 장애라고 판단한다.
-
-즉,
-
-```text
-Master 장애
-
-↓
-
-Advertisement 중단
-
-↓
-
-Timer 만료
-
-↓
-
-Master Down
-
-↓
-
-Backup 승격
-
-↓
-
-새로운 Master
-```
-
-이 과정을
-
-Failover
-
-라고 한다.
-
----
-
-# 실제 Failover 과정
-
-장애 전
-
-```text
-PC
-
-↓
-
-Virtual Gateway
-
-↓
-
-Master Router
-
-↓
-
-Internet
-```
-
-장애 발생
-
-```text
-Master Router
-
-↓
-
-Fail
-```
-
-Backup Router
-
-↓
-
-Master 승격
-
-↓
-
-Virtual IP 사용
-
-↓
-
-Virtual MAC 사용
-
-↓
-
-Gateway 유지
-
-↓
-
-Internet
-```
-
-사용자는
-
-Gateway 변경을 전혀 느끼지 못한다.
-
----
-
-# Preempt 기능
-
-Preempt는
-
-더 높은 Priority를 가진 Router가
-
-나중에 네트워크에 참여했을 때
-
-자동으로 Master 역할을 다시 가져오는 기능이다.
-
-예)
-
-```text
-Router A
-
-Priority =150
-
-↓
-
 Master
-
-
-Router A 장애
-
-↓
-
-Router B
-
-Priority =100
-
-↓
-
-Master
-
-
-Router A 복구
-
-↓
-
-Priority 비교
-
-↓
-
-Router A 다시 Master
-```
-
-이 기능이
-
-Preempt이다.
-
----
-
-# Preempt 비활성화
-
-Preempt를 사용하지 않으면
-
-현재 Master는
-
-계속 Master 역할을 수행한다.
-
-즉,
-
-Router A가 복구되어도
-
-Router B가 Master를 계속 유지한다.
-
----
-
-# Master Down Interval
-
-Backup Router는
-
-Advertisement가 일정 시간 동안 도착하지 않으면
-
-Master Down으로 판단한다.
-
-즉
-
-Advertisement가
-
-연속으로 끊겨야
-
-Failover가 발생한다.
-
----
-
-# Master 선출 흐름
-
-```text
-VRRP 시작
-
-↓
-
-Priority 비교
-
-↓
-
-Master 선출
 
 ↓
 
@@ -364,10 +113,26 @@ Advertisement
 
 ↓
 
-Backup 대기
+Backup
 
 ↓
 
+정상
+
+↓
+
+계속 대기
+```
+
+---
+
+# ⑤ 장애 감지
+
+Master Router가 장애가 발생하면 Advertisement Packet 전송이 중단된다.
+
+Backup Router는 일정 시간 동안 Advertisement를 수신하지 못하면 Master 장애로 판단한다.
+
+```text
 Master 장애
 
 ↓
@@ -376,6 +141,22 @@ Advertisement 중단
 
 ↓
 
+Advertisement 미수신
+
+↓
+
+Master Down
+```
+
+---
+
+# ⑥ Failover
+
+Backup Router 중 Priority가 가장 높은 Router가 새로운 Master가 된다.
+
+새로운 Master는 기존 Virtual IP와 Virtual MAC을 그대로 이어받는다.
+
+```text
 Master Down
 
 ↓
@@ -385,6 +166,48 @@ Backup 승격
 ↓
 
 새로운 Master
+
+↓
+
+Virtual IP 유지
+
+↓
+
+Virtual MAC 유지
+
+↓
+
+Gateway 서비스 지속
+```
+
+사용자는 Gateway 변경 없이 계속 통신할 수 있다.
+
+---
+
+# 전체 동작 흐름
+
+```text
+① 그룹 구성
+
+↓
+
+② Priority 비교
+
+↓
+
+③ Master 선출
+
+↓
+
+④ 정상 운영
+
+↓
+
+⑤ 장애 감지
+
+↓
+
+⑥ Failover
 ```
 
 ---
@@ -394,21 +217,19 @@ Backup 승격
 ```mermaid
 flowchart TD
 
-Start[VRRP 시작]
+Group[VRRP Group]
 
-Start --> Priority
+Group --> Priority
 
 Priority --> Master
 
-Master --> Adv[Advertisement 전송]
+Master --> Adv[Advertisement]
 
 Adv --> Backup
 
 Master -->|장애| Fail
 
-Fail --> Timer
-
-Timer --> NewMaster
+Fail --> NewMaster
 
 NewMaster[Backup → Master]
 ```
@@ -417,23 +238,28 @@ NewMaster[Backup → Master]
 
 # 실제 예시
 
+```text
 Router A
 
-Priority =150
+Priority = 150
 
 ↓
 
 Master
 
+------------------
+
 Router B
 
-Priority =120
+Priority = 100
 
 ↓
 
 Backup
 
-Router A 전원 OFF
+------------------
+
+Router A 장애
 
 ↓
 
@@ -449,7 +275,8 @@ Master 승격
 
 ↓
 
-사용자는 계속 인터넷 사용 가능
+Gateway 유지
+```
 
 ---
 
@@ -457,17 +284,23 @@ Master 승격
 
 정상
 
+↓
+
 Advertisement Packet
+
+↓
 
 1초마다 수신
 
-장애
+장애 발생
+
+↓
 
 Advertisement 중단
 
-새로운 Master
+↓
 
-Advertisement 송신 시작
+새로운 Master의 Advertisement 확인
 
 ---
 
@@ -475,19 +308,25 @@ Advertisement 송신 시작
 
 ✔ Priority가 가장 높은 Router가 Master가 된다.
 
+✔ 동일한 VRID를 가진 Router들이 VRRP 그룹을 구성한다.
+
+✔ Master만 Advertisement를 전송한다.
+
 ✔ Backup은 Advertisement를 감시한다.
 
 ✔ Advertisement가 중단되면 Master Down으로 판단한다.
 
-✔ Backup은 자동으로 Master로 승격된다.
+✔ Backup Router가 Master로 승격된다.
 
-✔ 이를 Failover라고 한다.
-
-✔ Preempt는 높은 Priority Router가 Master를 다시 가져오는 기능이다.
+✔ Virtual IP와 Virtual MAC은 그대로 유지된다.
 
 ---
 
 # 암기법
+
+VRRP Group
+
+↓
 
 Priority
 
@@ -505,23 +344,11 @@ Backup
 
 ↓
 
-Fail
-
-↓
-
-Master Down
-
-↓
-
 Failover
 
 ↓
 
-새 Master
-
-↓
-
-Preempt
+서비스 지속
 
 ---
 
@@ -533,16 +360,18 @@ Q. Backup Router는 평상시에 무엇을 하는가?
 
 Q. Failover란 무엇인가?
 
-Q. Preempt 기능은 왜 필요한가?
+Q. Advertisement가 중단되면 어떤 일이 발생하는가?
 
-Q. Advertisement Packet이 중단되면 어떤 일이 발생하는가?
+Q. 사용자가 장애를 거의 느끼지 못하는 이유는 무엇인가?
 
 ---
 
 # 핵심 요약
 
-VRRP는 Priority를 이용하여 Master Router를 선출한다.
+동일한 VRID와 Virtual IP를 가진 Router들은 하나의 VRRP 그룹을 구성한다.
 
-Master는 Gateway 역할을 수행하며 Advertisement Packet을 주기적으로 전송한다.
+Priority가 가장 높은 Router가 Master가 되며, Master는 Advertisement Packet을 주기적으로 전송한다.
 
-Backup Router는 이를 감시하다가 Advertisement가 일정 시간 동안 도착하지 않으면 Master 장애로 판단하고 자동으로 Master 역할을 이어받는다. 이 과정을 Failover라고 하며, Preempt 기능을 사용하면 더 높은 Priority를 가진 Router가 다시 Master 역할을 수행할 수 있다.
+Backup Router는 Advertisement를 감시하다가 일정 시간 동안 수신하지 못하면 Master 장애로 판단하고 새로운 Master로 승격한다.
+
+이 과정을 Failover라고 하며, Virtual IP와 Virtual MAC은 그대로 유지되므로 사용자는 Gateway 변경 없이 계속 통신할 수 있다.

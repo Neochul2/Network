@@ -17,11 +17,9 @@
 
 Priority는 VRRP 그룹에서 어떤 Router가 Master가 될지를 결정하는 우선순위 값이다.
 
-Priority 값이 높은 Router가 Master Router가 된다.
+Priority 값이 가장 높은 Router가 Master Router가 되며, 나머지 Router는 Backup으로 대기한다.
 
-즉,
-
-Priority는
+즉, Priority는
 
 "누가 Gateway 역할을 수행할 것인가?"
 
@@ -31,14 +29,11 @@ Priority는
 
 # Priority 범위
 
-Priority 값은
+Priority는 0~255 사이의 값을 사용한다.
 
-0 ~ 255
+대표적인 값은 다음과 같다.
 
-사이를 사용한다.
-
-대표적으로
-
+```
 Priority = 255
 
 ↓
@@ -47,13 +42,17 @@ Virtual IP Owner
 
 ↓
 
-가장 높은 우선순위
+항상 Master
+
+-----------------------
 
 Priority = 100
 
 ↓
 
 기본(Default) 값
+
+-----------------------
 
 Priority = 0
 
@@ -63,65 +62,68 @@ Master 역할 포기
 
 ↓
 
-Backup에게 즉시 양보
+Backup 즉시 선출
+```
 
 ---
 
-# Master Router
+# Priority 비교 예시
 
-Master Router는 실제 Gateway 역할을 수행하는 Router이다.
+```text
+Router A
 
-Master Router만
+Priority = 150
 
-- ARP 응답
-- Packet 전달
-- Advertisement 전송
+↓
 
-을 수행한다.
+Master
 
-즉,
+-------------------
 
-현재 서비스를 제공하는 Router가
+Router B
 
-Master이다.
+Priority = 100
 
----
+↓
 
-# Backup Router
+Backup
 
-Backup Router는 Master를 대신하기 위해 대기하는 Router이다.
+-------------------
 
-평상시에는
+Router C
 
-사용자 Packet을 전달하지 않는다.
+Priority = 80
 
-대신
+↓
 
-Master가 보내는 Advertisement를 계속 감시한다.
-
-Advertisement가 사라지면
-
-Master 장애로 판단한다.
+Backup
+```
 
 ---
 
 # Advertisement란?
 
-Advertisement는
+Advertisement는 Master Router가
 
-Master Router가
+"나는 현재 정상적으로 동작하고 있다."
 
-"나는 정상적으로 동작 중이다."
+라는 사실을 Backup Router에게 주기적으로 알리는 제어 메시지이다.
 
-라는 사실을 Backup Router에게 알려주는 VRRP 메시지이다.
+Master Router는 Advertisement Packet을 주기적으로 전송하고,
 
-Master는 일정한 간격으로
+Backup Router는 이를 계속 수신하면서 Master의 생존 여부를 확인한다.
 
-Advertisement Packet을 전송한다.
+---
 
-Backup은 이를 수신하면서
+# Advertisement 특징
 
-Master의 생존 여부를 확인한다.
+VRRP Advertisement는 다음과 같은 특징을 가진다.
+
+- 목적지 : 224.0.0.18
+- IP Protocol Number : 112
+- TTL : 255
+- 기본 전송 주기 : 1초
+- 포함 정보 : Priority, VRID, Virtual IP 목록
 
 ---
 
@@ -147,17 +149,14 @@ Master 정상
 계속 대기
 ```
 
-Master가
-
-계속 Advertisement를 보내면
-
-Backup은 아무 동작도 하지 않는다.
+Master가 Advertisement를 계속 전송하면 Backup은 아무 동작도 하지 않는다.
 
 ---
 
 # Master 장애
 
-Master 장애 발생
+```text
+Master 장애
 
 ↓
 
@@ -165,7 +164,7 @@ Advertisement 중단
 
 ↓
 
-Backup Timer 만료
+Backup이 일정 시간 동안 Advertisement 미수신
 
 ↓
 
@@ -178,66 +177,9 @@ Master Down 판단
 ↓
 
 Gateway 유지
+```
 
-즉,
-
-Advertisement가 끊기는 것이
-
-장애를 감지하는 기준이다.
-
----
-
-# Advertisement 특징
-
-VRRP Advertisement는
-
-다음과 같은 특징을 가진다.
-
-├─ Master만 전송
-
-├─ Backup은 수신만 수행
-
-├─ 기본 1초 간격
-
-├─ Multicast 사용
-
-├─ Protocol Number = 112
-
-└─ TTL = 255
-
----
-
-# Multicast 주소
-
-VRRP는
-
-다음 Multicast 주소를 사용한다.
-
-224.0.0.18
-
-같은 VRRP 그룹의 Router만
-
-Advertisement를 수신한다.
-
----
-
-# TTL = 255
-
-VRRP Advertisement는
-
-TTL(Time To Live)을
-
-255로 설정한다.
-
-이는
-
-다른 네트워크를 거쳐 전달되지 않도록 하기 위한 보안 기능이다.
-
-즉,
-
-같은 LAN 안에서만
-
-VRRP가 동작하도록 만든 것이다.
+Advertisement가 끊기는 것이 Master 장애를 판단하는 기준이다.
 
 ---
 
@@ -260,7 +202,7 @@ Backup 수신
 
 ↓
 
-Advertisement 정상
+Master 정상
 
 ↓
 
@@ -276,7 +218,7 @@ Master Down
 
 ↓
 
-Backup 승격
+새로운 Master
 ```
 
 ---
@@ -286,96 +228,58 @@ Backup 승격
 ```mermaid
 flowchart LR
 
-A[Master Router]
+Master -->|Advertisement| Backup
 
-B[Backup Router]
+Backup -->|대기| Backup
 
-A -->|Advertisement| B
+Master -. 장애 .-> Fail
 
-B -->|대기| B
+Fail --> NewMaster
 
-A -. 장애 .-> X((Fail))
-
-X --> B
-
-B --> M[새로운 Master]
+NewMaster[새로운 Master]
 ```
-
----
-
-# 실제 예시
-
-Router A
-
-Priority = 150
-
-↓
-
-Master
-
-↓
-
-Advertisement 전송
-
-Router B
-
-Priority = 100
-
-↓
-
-Backup
-
-↓
-
-Advertisement 수신
-
-Router A 장애
-
-↓
-
-Advertisement 중단
-
-↓
-
-Router B
-
-↓
-
-Master 승격
 
 ---
 
 # Wireshark에서 확인
 
+```
+Destination
+
+224.0.0.18
+
+↓
+
 Protocol
 
 112
 
-Destination
-
-224.0.0.18
+↓
 
 TTL
 
 255
 
-Packet Type
+↓
 
 Advertisement
+```
 
 ---
 
 # 시험 핵심
 
-✔ Priority가 높은 Router가 Master가 된다.
+✔ Priority가 가장 높은 Router가 Master가 된다.
+
+✔ Priority 255는 Virtual IP Owner이다.
+
+✔ Priority 0은 Master 역할을 포기한다.
 
 ✔ Master만 Advertisement를 전송한다.
 
 ✔ Backup은 Advertisement를 감시한다.
 
-✔ Advertisement가 끊기면 Master Down으로 판단한다.
-
-✔ VRRP는 Multicast 224.0.0.18을 사용한다.
+✔ 목적지는 224.0.0.18이다.
 
 ✔ Protocol Number는 112이다.
 
@@ -407,15 +311,13 @@ Master Down
 
 Failover
 
-↓
-
-새 Master
-
 ---
 
 # 면접 질문
 
 Q. Priority의 역할은 무엇인가?
+
+Q. Priority 255와 0의 의미는 무엇인가?
 
 Q. Advertisement Packet은 왜 필요한가?
 
@@ -427,8 +329,6 @@ Q. VRRP에서 TTL을 255로 사용하는 이유는 무엇인가?
 
 # 핵심 요약
 
-VRRP는 Priority를 이용하여 Master Router를 선출한다.
+Priority는 Master Router를 결정하는 우선순위 값이며, 가장 높은 Priority를 가진 Router가 Master가 된다.
 
-Master는 Advertisement Packet을 주기적으로 전송하여 자신의 생존을 알리고,
-Backup은 이를 감시하다가 Advertisement가 중단되면 Master 장애로 판단하여
-자동으로 새로운 Master 역할을 수행한다.
+Master는 Advertisement Packet을 주기적으로 전송하여 자신의 생존 상태를 알리고, Backup은 이를 감시하다가 Advertisement가 일정 시간 동안 도착하지 않으면 Master 장애로 판단하여 새로운 Master로 승격한다.

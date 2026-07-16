@@ -15,11 +15,13 @@
 
 # VRRP란?
 
-VRRP(Virtual Router Redundancy Protocol)는 여러 대의 라우터를 하나의 가상 라우터(Virtual Router)처럼 동작하게 만들어 기본 게이트웨이의 장애를 자동으로 대비하는 프로토콜이다.
+VRRP(Virtual Router Redundancy Protocol)는 여러 대의 물리 Router를 하나의 Virtual Router로 그룹화하여 사용자에게 하나의 기본 Gateway를 제공하는 표준 프로토콜이다.
 
-사용자는 하나의 Gateway만 사용하는 것처럼 보이지만 실제로는 여러 장비가 하나의 Virtual Gateway를 공유한다.
+VRRP는 OSI 3계층(Network Layer)에서 동작하며, Gateway 장애가 발생하면 Backup Router가 자동으로 Master 역할을 이어받아 서비스 연속성을 보장한다.
 
-Gateway 장비가 장애가 발생하면 Backup Router가 자동으로 Master Router 역할을 이어받아 서비스가 중단되지 않는다.
+VRRP는 IETF 표준 프로토콜로 RFC 3768(IPv4)에서 처음 정의되었으며, RFC 5798에서 IPv4와 IPv6를 모두 지원하도록 확장되었다.
+
+벤더 독립적인 표준 프로토콜이므로 서로 다른 제조사의 Router와 L3 Switch 간에도 이중화 구성이 가능하다.
 
 ---
 
@@ -91,33 +93,25 @@ Internet
 
 # VRRP 특징
 
-VRRP는 다음과 같은 특징을 가진다.
-
-├─ 표준 프로토콜(RFC 3768, RFC 5798)
-
-├─ 벤더 독립
-
-├─ Gateway 이중화
-
-├─ 자동 Failover
-
-├─ Virtual IP 사용
-
-├─ Virtual MAC 사용
-
-└─ High Availability 제공
-
+- OSI Layer 3(Network Layer)에서 동작
+- Gateway 이중화를 제공
+- Virtual IP와 Virtual MAC 사용
+- Master 장애 시 Backup이 자동 승격(Failover)
+- RFC 5798 기반의 IETF 표준 프로토콜
+- 벤더 독립적인 프로토콜
+- High Availability(고가용성) 제공
+- 
 ---
 
 # VRRP와 HSRP 비교
 
-| 항목 | VRRP | HSRP |
-|------|------|------|
-| 표준 | RFC 표준 | Cisco 전용 |
-| 호환성 | 모든 벤더 | Cisco 장비 |
-| Virtual IP | 지원 | 지원 |
-| Virtual MAC | 지원 | 지원 |
-| 사용 환경 | Multi Vendor | Cisco |
+
+| 구분 | VRRP | HSRP | GLBP |
+|------|------|------|------|
+| 표준/제조사 | IETF 표준(RFC 5798) | Cisco 독자 | Cisco 독자 |
+| 가상 IP | 1개 | 1개 | 1개 |
+| 로드밸런싱 | 미지원 | 미지원 | 지원 |
+| 멀티캐스트 | 224.0.0.18 | 224.0.0.102 | 224.0.0.102 |
 
 ---
 

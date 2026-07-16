@@ -15,8 +15,7 @@
 
 # VRRP의 핵심 구성요소
 
-VRRP는 여러 Router를 하나의 Virtual Router처럼 동작시키기 위해
-다음과 같은 구성 요소를 사용한다.
+VRRP는 여러 Router를 하나의 Virtual Router처럼 동작시키기 위해 다음과 같은 구성 요소를 사용한다.
 
 ├─ VRID (Virtual Router ID)
 
@@ -32,50 +31,51 @@ VRRP는 여러 Router를 하나의 Virtual Router처럼 동작시키기 위해
 
 # VRID (Virtual Router Identifier)
 
-VRID는 하나의 Virtual Router를 식별하기 위한 번호이다.
+VRID(Virtual Router ID)는 VRRP 그룹을 식별하는 0~255 사이의 번호이다.
 
-같은 VRRP 그룹에 속한 Router는 반드시 동일한 VRID를 사용해야 한다.
+동일한 VRID를 설정한 Router들은 하나의 Virtual Router 그룹을 구성하며, 같은 Virtual IP와 Virtual MAC을 공유한다.
 
-VRID는 하나의 그룹 번호라고 생각하면 이해하기 쉽다.
+하나의 인터페이스에서 여러 VRID 그룹을 동시에 운영할 수 있으며, 이를 이용하여 부하를 분산할 수 있다.
 
-예를 들어
+동일한 네트워크에서는 VRID가 중복되지 않도록 설계해야 한다.
 
-Router A
+---
 
-VRID = 10
+# VRID 부하 분산 예시
 
-↓
+```text
+VRID 10
+   │
+   └── Router A → Master
 
-Router B
+VRID 20
+   │
+   └── Router B → Master
+```
 
-VRID = 10
+여러 개의 VRRP 그룹을 구성하면 Router별로 Master 역할을 나누어 부하를 분산할 수 있다.
 
-↓
+---
 
-같은 VRRP 그룹
+# 설정 예시
 
-만약
+```bash
+interface GigabitEthernet0/0
 
-Router C
-
-VRID = 20
-
-이라면
-
-다른 VRRP 그룹으로 동작한다.
+vrrp 10 ip 192.168.10.254
+```
 
 ---
 
 # Virtual IP
 
-Virtual IP는 사용자가 실제 Gateway로 사용하는 IP 주소이다.
+Virtual IP는 사용자가 기본 Gateway로 설정하는 그룹 공통 IP 주소이다.
 
-사용자는 실제 Router의 IP를 알 필요가 없다.
-
-오직 Virtual IP만 Gateway로 설정한다.
+실제 Router의 물리 IP와는 별개이며, 사용자는 Virtual IP만 Gateway로 설정한다.
 
 예)
 
+```
 Router A
 
 192.168.10.1
@@ -90,58 +90,26 @@ Virtual IP
 
 사용자 Gateway
 
-↓
-
 192.168.10.254
+```
 
-Master가 변경되어도
-
-Virtual IP는 변하지 않는다.
+Master Router가 변경되어도 Virtual IP는 변하지 않는다.
 
 ---
 
 # Virtual MAC
 
-IP에는 반드시 MAC Address가 존재한다.
+Virtual MAC은 Virtual IP에 대응되는 MAC Address이다.
 
-Virtual IP도 동일하게
-
-Virtual MAC을 가진다.
-
-즉
-
-PC는
-
-Virtual MAC으로 패킷을 전송한다.
-
-Master Router가 변경되면
-
-새로운 Master가
-
-동일한 Virtual MAC을 사용한다.
-
-따라서
-
-PC는 ARP를 다시 수행하지 않아도 된다.
-
----
-
-# Virtual MAC 형식
-
-VRRP에서 사용하는 Virtual MAC 주소는
+VRRP는 다음 형식의 Virtual MAC을 사용한다.
 
 ```
-00-00-5E-00-01-XX
+00-00-5E-00-01-{VRID}
 ```
-
-형식을 사용한다.
-
-여기서
-
-XX는 VRID를 의미한다.
 
 예)
 
+```
 VRID = 10
 
 ↓
@@ -149,15 +117,19 @@ VRID = 10
 Virtual MAC
 
 00-00-5E-00-01-0A
+```
+
+Master Router는 Virtual IP와 Virtual MAC에 대한 ARP 요청에 응답하며 트래픽을 처리한다.
+
+Failover가 발생해도 Virtual IP와 Virtual MAC은 그대로 유지되므로 단말은 ARP를 다시 수행하지 않고 계속 통신할 수 있다.
 
 ---
 
 # ARP와 Virtual MAC
 
-PC는 처음 통신할 때
+PC는 처음 통신할 때 Gateway의 MAC Address를 알아야 한다.
 
-Gateway의 MAC Address를 알아야 한다.
-
+```
 ARP Request
 
 ↓
@@ -166,26 +138,24 @@ ARP Request
 
 ↓
 
-Master Router 응답
+Master Router
 
 ↓
 
-Virtual MAC 전달
+Virtual MAC 응답
 
 ↓
 
 ARP Table 저장
+```
 
-이후에는
-
-PC가 항상
-
-Virtual MAC으로 통신한다.
+이후 PC는 Virtual MAC으로 계속 통신한다.
 
 ---
 
 # 장애 발생 시
 
+```text
 Master Router 장애
 
 ↓
@@ -207,10 +177,9 @@ ARP 변경 없음
 ↓
 
 통신 지속
+```
 
-사용자는
-
-Gateway가 변경된 사실을 알지 못한다.
+사용자는 Gateway가 변경된 사실을 알지 못한다.
 
 ---
 
@@ -219,33 +188,33 @@ Gateway가 변경된 사실을 알지 못한다.
 ```text
 VRRP Group
 
-        │
+      │
 
-        ▼
+      ▼
 
-      VRID
+    VRID
 
-        │
+      │
 
-        ▼
+      ▼
 
  Virtual IP
 
-        │
+      │
 
-        ▼
+      ▼
 
  Virtual MAC
 
-        │
+      │
 
-        ▼
+      ▼
 
 Master Router
 
-        │
+      │
 
-        ▼
+      ▼
 
 Backup Router
 ```
@@ -272,6 +241,7 @@ Backup --> VMAC
 
 # 실제 통신 과정
 
+```text
 PC
 
 ↓
@@ -309,6 +279,7 @@ Backup 승격
 ↓
 
 계속 통신
+```
 
 ---
 
@@ -366,7 +337,9 @@ Virtual MAC 확인 가능
 
 ✔ Virtual MAC은 Virtual IP에 대응되는 MAC이다.
 
-✔ Master 변경 시 Virtual MAC도 그대로 유지된다.
+✔ Master Router는 ARP 요청에 응답한다.
+
+✔ Failover가 발생해도 Virtual IP와 Virtual MAC은 유지된다.
 
 ✔ ARP를 다시 수행하지 않아도 된다.
 
@@ -416,8 +389,8 @@ Q. Master가 변경되어도 통신이 끊기지 않는 이유는 무엇인가?
 
 # 핵심 요약
 
-VRRP는 VRID를 이용하여 Virtual Router를 구성하고,
-Virtual IP와 Virtual MAC을 통해 하나의 Gateway처럼 동작한다.
+VRID는 Virtual Router 그룹을 식별하는 번호이며, 같은 VRID를 가진 Router들은 하나의 Virtual Router를 구성한다.
 
-Master Router가 변경되더라도 Virtual IP와 Virtual MAC은 유지되므로
-사용자는 별도의 설정 변경 없이 계속 통신할 수 있다.
+사용자는 Virtual IP를 Gateway로 사용하고, Master Router는 Virtual MAC으로 ARP 요청에 응답한다.
+
+Failover가 발생해도 Virtual IP와 Virtual MAC은 유지되므로 사용자는 별도의 설정 변경 없이 계속 통신할 수 있다.
