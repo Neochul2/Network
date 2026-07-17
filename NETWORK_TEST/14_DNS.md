@@ -1,293 +1,292 @@
-# DNS (Domain Name System)
-
-> ⭐ DNS = 분산형 이름 시스템 / 기본 UDP 53 / Zone Transfer는 TCP 53
+# DNS — 왜 필요한가부터 어떻게 동작하는가까지
 
 ---
 
-## DNS란?
+## 1. 문제: 사람은 숫자를 기억하기 어렵다
 
-사람이 사용하는 **Domain Name**을 컴퓨터가 사용하는 **IP Address**로 변환하는 분산형 이름 시스템.
+인터넷에서 서버를 찾으려면 IP 주소가 필요하다.
 
 ```
-www.google.com → 142.250.xxx.xxx
+구글 서버: 142.250.206.78
+네이버 서버: 223.130.200.104
+유튜브 서버: 142.250.207.14
+```
+
+하지만 사람은 이런 숫자를 수백 개 기억할 수 없다.
+
+그래서 사람이 기억하기 쉬운 **이름(Domain Name)** 을 쓰기 시작했다.
+
+```
+www.google.com
+www.naver.com
+www.youtube.com
 ```
 
 ---
 
-## DNS 핵심 기능 3가지
+## 2. 초기 해결책: HOSTS 파일
 
-| 기능 | 설명 |
-|------|------|
-| Name Space | 이름 공간 정의 |
-| Name Registration | 이름 등록 |
-| Name Resolution | 이름→IP 변환 |
+초기 인터넷(ARPAnet)에서는 간단하게 해결했다.
+모든 컴퓨터에 **HOSTS 파일** 하나를 배포했다.
+
+```
+142.250.206.78    www.google.com
+223.130.200.104   www.naver.com
+```
+
+이 파일을 보고 이름 → IP 주소로 변환했다.
+컴퓨터가 수십 대일 때는 괜찮았다.
 
 ---
 
-## Name Space
+## 3. 문제: HOSTS 파일 방식의 한계
 
-**단순 구조 (Flat Name Space):**
-```
-HOST1, HOST2, HOST3 ...
-```
-- 이름 충돌(Name Collision) 쉽게 발생
-- 한 장치는 다른 장치들과 논리적으로 동등
+인터넷이 폭발적으로 성장하면서 문제가 생겼다.
 
-**계층 구조 (Hierarchical Name Space):**
+| 문제점 | 설명 |
+|--------|------|
+| 파일 크기 증가 | 수백만 개의 호스트를 하나의 파일에 담을 수 없음 |
+| 중앙 관리 필요 | 누군가 한 곳에서 관리해야 하는데 불가능한 규모 |
+| 갱신 비용 증가 | 새 서버가 생길 때마다 전 세계 파일을 업데이트해야 함 |
+| 확장 불가 | 인터넷 규모로는 근본적으로 불가능 |
+
+또한 HOSTS 파일은 **단순 구조(Flat Name Space)** 였다.
+
 ```
-.
+HOST1, HOST2, HOST3, HOST4 ...
+```
+
+이름 충돌(Name Collision)이 쉽게 발생했다.
+"mail"이라는 이름을 두 회사가 동시에 쓰면 충돌이 난다.
+
+---
+
+## 4. 해결책의 조건
+
+새로운 이름 시스템이 필요했다. 요구사항은 다음과 같았다.
+
+- 전 세계 수백만 대 이상을 수용할 수 있어야 한다
+- 중앙 한 곳이 아니라 **분산 관리** 가 가능해야 한다
+- 이름 충돌이 없어야 한다
+- 빠르게 조회할 수 있어야 한다
+
+이 요구사항을 모두 만족하는 시스템이 **DNS(Domain Name System)** 다.
+
+---
+
+## 5. DNS의 첫 번째 해결: 계층형 이름 공간
+
+DNS는 이름을 **계층 구조(Hierarchical Name Space)** 로 만들었다.
+
+```
+.                      ← Root (최상위)
 └── com
     └── google
-        └── www
+        └── www        ← www.google.com
 ```
-- 이름 충돌 감소
-- 관리 용이
-- 확장성 향상
+
+이렇게 하면:
+- 각 조직이 자기 영역 안에서 자유롭게 이름을 붙일 수 있다
+- 전체 이름(FQDN)이 다르면 충돌이 없다
+- google.com의 "mail"과 naver.com의 "mail"은 서로 다른 이름이다
 
 ---
 
-## Name Registration 3가지 방법
+## 6. DNS의 두 번째 해결: 이름 등록 방식
 
-이름을 등록하여 다른 사용자가 조회(Name Resolution)할 수 있도록 하는 과정.
+이름을 등록하는 방법은 3가지가 있다.
 
-### ① Table 등록
-
-```
-HOST1 → 192.168.0.10
-HOST2 → 192.168.0.20
-```
-
-한 명의 관리자가 하나의 테이블을 가지고 이름 지정을 운용.
-이름 추가/삭제/변경은 테이블 수정으로 이루어짐.
-
-| 장점 | 단점 |
-|------|------|
-| 구조가 단순 | 규모가 커질수록 관리 어려움 |
-| 구현이 쉬움 | 검색 속도 저하 |
+### ① Table 등록 (HOSTS 파일 방식)
+관리자가 직접 테이블에 이름-IP를 기록.
+단순하지만 규모가 커지면 한계.
 
 ### ② Broadcast 등록
+"이 이름 쓰는 사람 있어?" 하고 네트워크 전체에 물어보는 방식.
+별도 서버가 필요 없지만 인터넷 규모에서는 불가능.
+→ 대표 사례: **NetBIOS Name Service**
 
-시행착오(Trial-and-Error) 방법 사용.
-한 장치가 특정 이름을 사용하려면 먼저 네트워크상의 모든 장치에 브로드캐스트로 이미 그 이름이 사용 중인지 확인.
+### ③ Database 등록 ← DNS가 채택한 방식
+이름을 **분산 데이터베이스** 에 등록.
+계층적으로 권한을 위임하여 각 조직이 자기 영역을 관리.
+전 세계 규모로 확장 가능.
+
+---
+
+## 7. DNS의 세 번째 해결: 분산 데이터베이스 구조
+
+DNS는 하나의 서버가 모든 정보를 갖지 않는다.
+**계층적으로 나뉜 여러 서버** 가 각자 담당 영역만 관리한다.
 
 ```
-HOST1 ?
-    ↓
-Broadcast (전체 네트워크에 질의)
-    ↓
-HOST1 응답 (이미 있으면 충돌)
+Root DNS Server         ← "." 전체를 담당
+      ↓
+TLD DNS Server          ← ".com", ".kr" 등 담당
+      ↓
+Authoritative DNS       ← "google.com" 담당
+      ↓
+Host                    ← 최종 IP 주소
 ```
 
-| 장점 | 단점 |
+| 서버 | 역할 |
 |------|------|
-| 별도 서버 불필요 | 네트워크 트래픽 증가 |
-| 구현 단순 | 인터넷 규모에서는 사용 불가 |
-
-대표 사례: **NetBIOS Name Service**
-
-### ③ Database 등록
-
-네임을 등록하기 위해 데이터베이스에 추가할 이름 지정 요청을 작성.
-네임 체계 기관이 완전히 중앙 집중적이라면 데이터베이스도 그 기관이 관리.
-
-```
-Name
-   ↓
-DNS Database
-   ↓
-IP Address
-```
-
-| 장점 | 단점 |
-|------|------|
-| 대규모 네트워크 관리 가능 | 구현 복잡 |
-| 빠른 검색 | 초기 구축 비용 |
-| 분산/계층적 관리 가능 | |
-
-DNS는 **계층적으로 연결된 분산 데이터베이스(Distributed Database)** 를 사용한다.
+| Root DNS | 전체 DNS 트리의 시작점. TLD 서버 위치를 안다 |
+| TLD DNS | .com, .net, .kr 등 최상위 도메인 관리 |
+| Authoritative DNS | 실제 도메인(google.com)의 IP를 가진 서버 |
+| Local DNS Resolver | 클라이언트 대신 조회를 수행하는 서버 |
 
 ---
 
-## Name Resolution 3가지 방법
+## 8. Domain과 Zone의 차이
 
-등록된 이름을 IP 주소로 변환하는 과정.
-
-### ① Table 기반 네임 변환
-
-네트워크의 각 장치가 Table 등록에 사용하는 테이블을 직접 조회하여 이름→주소 변환.
-→ HOSTS 파일 방식이 이에 해당.
-
-### ② Broadcast 네임 변환
-
-Broadcast 네임 등록과 상호보완적.
-모든 장치가 브로드캐스트 가능한 간단한 시스템에서만 사용 가능.
-→ 인터넷 규모에서는 불가.
-
-### ③ Client/Server 네임 변환
-
-서버 소프트웨어가 클라이언트가 보낸 네임 변환 요청에 응답.
-→ DNS가 이 방식을 사용.
-
-```
-Client → DNS Server에 질의 → IP 주소 응답
-```
-
-| 방법 | 설명 | 대표 사례 |
-|------|------|-----------|
-| Table 기반 | 로컬 테이블 직접 조회 | HOSTS 파일 |
-| Broadcast | 전체 네트워크에 브로드캐스트 질의 | NetBIOS |
-| Client/Server | DNS 서버에 질의하여 응답 | DNS |
-
----
-
-## DNS 설계 목표
-
-- 전 세계 규모에서도 동작
-- 분산 관리 / 지역(Local) 관리
-- 높은 확장성
-- Cache를 이용한 성능 향상
-
----
-
-## DNS 설계 가정
-
-- Query가 Update보다 훨씬 많다
-- 이름 변경은 자주 발생하지 않는다
-- 데이터는 분산 관리된다
-- 하나의 서버가 모든 정보를 저장하지 않는다
-
----
-
-## HOSTS 파일 방식의 한계
-
-| 문제점 |
-|--------|
-| 파일 크기 증가 |
-| 중앙 관리 필요 |
-| 갱신 비용 증가 |
-| 인터넷 규모로 확장 불가능 |
-
-→ 이 한계를 해결하기 위해 DNS 등장
-
----
-
-## Domain vs Zone
+혼동하기 쉬운 두 개념이다.
 
 | 구분 | 설명 |
 |------|------|
-| Domain | 논리적인 이름 공간 |
-| Zone | 하나의 DNS Server가 실제 관리하는 영역 |
+| Domain | 논리적인 이름 공간 (google.com 전체) |
+| Zone | 하나의 DNS 서버가 실제 관리하는 영역 |
 
-하나의 Domain은 관리 효율을 위해 여러 Zone으로 나누어 운영 가능.
-
----
-
-## DNS 계층 구조
-
-```
-Root DNS Server
-      ↓
-TLD DNS Server (.com, .kr 등)
-      ↓
-Authoritative DNS Server (google.com 담당)
-      ↓
-Host
-```
+google.com이라는 Domain은 관리 편의를 위해 여러 Zone으로 나뉠 수 있다.
 
 ---
 
-## DNS 조회 과정
+## 9. 실제 DNS 조회 흐름
+
+브라우저에 `www.google.com`을 입력하면 어떤 일이 벌어질까?
 
 ```
-Browser Cache
-      ↓
-OS DNS Cache
-      ↓
-HOSTS File
-      ↓
-Local DNS Resolver (UDP Port 53)
-      ↓
-Root DNS → TLD DNS → Authoritative DNS
-      ↓
-IP Address 반환
-      ↓
-TCP 3-Way Handshake → HTTP/HTTPS 연결
-```
-
-※ HTTP/3는 TCP 대신 QUIC(UDP 기반) 사용
-
----
-
-## Recursive Query vs Iterative Query
-
-| 구분 | 설명 |
-|------|------|
-| Recursive Query | Client → Local DNS: 최종 IP 주소 요청, Local DNS가 끝까지 찾아서 응답 |
-| Iterative Query | Local DNS → Root/TLD/Authoritative: 순차 조회하여 IP 찾음 |
-
-```
-Client ─[Recursive]─▶ Local DNS Resolver
-                           │
-                     [Iterative]
-                           ↓
-                       Root DNS → TLD DNS → Authoritative DNS
-                           ↓
-                       Local DNS → Client
+① Browser Cache 확인
+        ↓ (없으면)
+② OS DNS Cache 확인
+        ↓ (없으면)
+③ HOSTS 파일 확인
+        ↓ (없으면)
+④ Local DNS Resolver에 질의 (UDP Port 53)
+        ↓
+⑤ Root DNS → "com을 담당하는 TLD 서버 주소는 이거야"
+        ↓
+⑥ TLD DNS → "google.com을 담당하는 서버 주소는 이거야"
+        ↓
+⑦ Authoritative DNS → "www.google.com의 IP는 142.250.xxx.xxx야"
+        ↓
+⑧ IP 주소를 브라우저에 반환
+        ↓
+⑨ TCP 3-Way Handshake → HTTP/HTTPS 연결 시작
 ```
 
 ---
 
-## DNS Cache와 TTL
+## 10. Recursive Query vs Iterative Query
 
-**TTL (Time To Live):** DNS Cache가 유지되는 시간.
+조회 방식에는 두 가지가 있다.
 
-TTL 만료 시 다시 DNS 조회 수행.
+**Recursive Query (재귀 질의)**
+- Client → Local DNS: "www.google.com의 IP 알려줘"
+- Local DNS가 끝까지 찾아서 최종 답을 돌려준다
+- Client 입장에서는 Local DNS에 한 번만 물어보면 된다
 
-장점:
+**Iterative Query (반복 질의)**
+- Local DNS → Root DNS: "google.com 어디 있어?" → "TLD 서버 물어봐"
+- Local DNS → TLD DNS: "google.com 어디 있어?" → "Authoritative 물어봐"
+- Local DNS → Authoritative DNS: "www.google.com IP?" → "142.250.xxx.xxx"
+- Local DNS가 직접 발로 뛰어다닌다
+
+```
+Client ──[Recursive]──▶ Local DNS Resolver
+                               │
+                         [Iterative]
+                               ↓
+                           Root DNS
+                               ↓
+                           TLD DNS
+                               ↓
+                       Authoritative DNS
+                               ↓
+                         Local DNS → Client
+```
+
+즉:
+- **Client ↔ Local DNS = Recursive**
+- **Local DNS ↔ DNS 서버들 = Iterative**
+
+---
+
+## 11. 성능 문제: 매번 조회하면 느리다 → Cache와 TTL
+
+DNS 조회는 여러 서버를 거치기 때문에 느릴 수 있다.
+그래서 **Cache** 를 사용한다.
+
+한 번 조회한 결과를 일정 시간 저장해 두고 재사용한다.
+
+이 유지 시간을 **TTL(Time To Live)** 라고 한다.
+
+TTL이 만료되면 다시 조회하여 최신 정보를 가져온다.
+
+Cache의 장점:
 - 조회 속도 향상
 - Root DNS 부하 감소
 - 네트워크 트래픽 감소
 
 ---
 
-## DNS Resource Record
+## 12. DNS가 사용하는 프로토콜: 왜 UDP인가?
+
+DNS는 기본적으로 **UDP Port 53** 을 사용한다.
+
+이유: DNS 질의는 짧은 요청 → 짧은 응답이다.
+TCP처럼 3-Way Handshake를 할 필요 없이 바로 주고받는 게 빠르다.
+
+단, 다음 경우에는 **TCP Port 53** 을 사용한다.
+
+| 상황 | 이유 |
+|------|------|
+| 응답 데이터가 큰 경우 | UDP는 512Byte(기본) 초과 시 잘림 |
+| Zone Transfer | 서버 간 대량 데이터 동기화 |
+| DNSSEC | 보안 서명으로 응답이 커짐 |
+
+---
+
+## 13. DNS Resource Record — 무엇을 저장하는가?
+
+DNS는 IP 주소만 저장하는 게 아니다.
 
 | Record | 설명 |
 |--------|------|
-| A | IPv4 주소 |
-| AAAA | IPv6 주소 |
-| CNAME | 별칭(Alias) |
-| NS | 권한 DNS 서버 |
-| MX | 메일 서버 |
-| PTR | Reverse Lookup (IP→이름) |
-| SOA | Zone 시작 정보 |
+| A | 도메인 → IPv4 주소 |
+| AAAA | 도메인 → IPv6 주소 |
+| CNAME | 도메인 → 다른 도메인 (별칭) |
+| MX | 메일 서버 주소 |
+| NS | 이 도메인을 담당하는 DNS 서버 |
+| PTR | IP → 도메인 (역방향 조회) |
+| SOA | Zone의 시작 정보 |
 
 ---
 
-## DNS 프로토콜 (UDP vs TCP)
+## 14. 핵심 요약 — 전체 흐름 한눈에
 
-| 구분 | 프로토콜 |
-|------|----------|
-| 일반 DNS 조회 | **UDP 53** (기본) |
-| 큰 응답 | TCP 53 |
-| Zone Transfer (AXFR, IXFR) | TCP 53 |
-| DNSSEC 등 응답 크기 큰 경우 | TCP 53 |
-
-UDP 사용 이유: 연결 설정(3-Way Handshake) 없어 빠른 질의/응답 가능.
-
----
-
-## 공개 DNS 서버
-
-| 서비스 | 주소 |
-|--------|------|
-| Google Public DNS | 8.8.8.8 / 8.8.4.4 |
-| Cloudflare DNS | 1.1.1.1 |
+```
+사람: "www.google.com 접속하고 싶어"
+        ↓
+문제: IP 주소를 모른다
+        ↓
+HOSTS 파일 방식 → 인터넷 규모에서 한계
+        ↓
+DNS 등장: 계층형 이름 공간 + 분산 데이터베이스
+        ↓
+조회: Client → Local DNS (Recursive)
+           Local DNS → Root/TLD/Authoritative (Iterative)
+        ↓
+결과: IP 주소 획득 → TCP 연결 → HTTP 통신 시작
+        ↓
+성능: Cache + TTL로 반복 조회 줄임
+        ↓
+프로토콜: 기본 UDP 53 / 대용량·Zone Transfer는 TCP 53
+```
 
 ---
 
 ## 자주 틀리는 부분
 
-❌ DNS는 항상 TCP를 사용 → 기본은 UDP 53, 큰 응답/Zone Transfer만 TCP 53  
-❌ Domain과 Zone은 같은 개념 → Domain은 논리적 공간, Zone은 실제 관리 영역  
-❌ Recursive Query = Iterative Query → Client↔LocalDNS는 Recursive, LocalDNS↔서버는 Iterative
+❌ DNS는 항상 TCP → 기본은 UDP 53  
+❌ Domain = Zone → Domain은 논리적 공간, Zone은 실제 관리 영역  
+❌ Recursive = Iterative → Client↔LocalDNS는 Recursive, LocalDNS↔서버는 Iterative  
+❌ DNS는 IP만 저장 → A, AAAA, MX, CNAME 등 다양한 Record 저장
