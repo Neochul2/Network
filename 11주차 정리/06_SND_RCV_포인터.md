@@ -40,6 +40,9 @@ TCP는 **Byte Stream 기반 프로토콜**이다.
 <img width="1248" height="717" alt="image" src="https://github.com/user-attachments/assets/359e6412-55d8-4f06-9816-4f9e32a40993" />
 <img width="1363" height="661" alt="image" src="https://github.com/user-attachments/assets/7ccceef7-e7e2-49c5-b971-6def934d6690" />
 
+<img width="678" height="771" alt="image" src="https://github.com/user-attachments/assets/34e483ee-dad3-468c-bf85-f3a2082eb1eb" />
+
+
 
 
 
