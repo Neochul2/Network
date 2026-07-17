@@ -7,64 +7,64 @@
 ## 핵심 비교표
 
 | 항목 | TCP | UDP |
-|------|-----|-----|
+|:---|:---|:---|
 | 연결 방식 | 연결형 (Connection-Oriented) | 비연결형 (Connectionless) |
-| 신뢰성 | 제공 (ACK + 재전송) | 제공 안 함 |
-| 순서 보장 | 보장 | 보장 안 함 |
-| 재전송 | 자동 재전송 | 없음 |
+| 신뢰성 | ACK + 재전송 제공 | 제공 안 함 |
+| 순서 보장 | O | X |
+| 재전송 | O | X |
 | 흐름 제어 | Sliding Window | 없음 |
-| 혼잡 제어 | 있음 | 없음 |
+| 혼잡 제어 | O | X |
 | 속도 | 상대적으로 느림 | 빠름 |
-| 헤더 크기 | 20~60 Byte | 8 Byte |
-| 데이터 단위 | Byte Stream (스트림 기반) | Message (메시지 기반) |
-| 데이터 양 | 소형~초대형 (수 기가바이트) | 소형~중형 (최대 수백 바이트) |
+| 헤더 크기 | 20~60Byte | 8Byte |
+| 데이터 단위 | Byte Stream | Message |
+| 데이터 양 | 소형~초대형 | 소형~중형 |
 
 ---
 
 ## TCP 대표 애플리케이션
 
-FTP, Telnet, SMTP, HTTP, POP3, IMAP, BGP, IRC, NHS(나중 버전)
+FTP, Telnet, SMTP, HTTP, POP3, IMAP, BGP, IRC, NFS(나중 버전)
 
 ---
 
 ## UDP 대표 애플리케이션
 
-DNS, BOOTP, DHCP, TFTP, SNMP, RIP, NFS(초기 버전), VoIP, 온라인 게임, 실시간 스트리밍
+DNS, BOOTP, DHCP, TFTP, SNMP, RIP, NFS(초기), VoIP, 온라인 게임, 실시간 스트리밍
 
 ---
 
-## Well-Known Port 암기표
+## Well-Known Port
 
-| Port | 프로토콜 | 서비스 내용 |
-|------|----------|------------|
-| 21 (TCP) | FTP | 파일 전송 (인증/컨트롤) |
-| 23 (TCP) | Telnet | 원격 서버 실행 창 |
-| 25 (TCP) | SMTP | 메일 전송 |
-| 53 (UDP) | DNS | 도메인 이름 해석 |
-| 69 (UDP) | TFTP | 인증 없는 단순 파일 전송 |
-| 80 (TCP) | HTTP | 웹 서비스 |
-| 110 (TCP) | POP3 | 메일 서버에서 메일 읽기 |
-| 111 (TCP) | RPC | 원격 프로세스 실행 |
-| 138 (UDP) | NetBIOS | 윈도우 파일 공유 |
-| 143 (TCP) | IMAP | 메일 읽기 (읽어도 서버에 남음) |
-| 161 (UDP) | SNMP | 네트워크 관리/모니터링 |
-| 443 (TCP) | HTTPS | 암호화 웹 서비스 |
+| Port | 프로토콜 | 서비스 |
+|:---:|:---:|:---|
+| 21 | TCP | FTP |
+| 23 | TCP | Telnet |
+| 25 | TCP | SMTP |
+| 53 | UDP | DNS |
+| 69 | UDP | TFTP |
+| 80 | TCP | HTTP |
+| 110 | TCP | POP3 |
+| 111 | TCP | RPC |
+| 138 | UDP | NetBIOS |
+| 143 | TCP | IMAP |
+| 161 | UDP | SNMP |
+| 443 | TCP | HTTPS |
 
 ---
 
 ## 포트 번호 범위
 
 | 구분 | 범위 | 설명 |
-|------|------|------|
-| Well-Known Port | 0 ~ 1023 | IANA 관리, 표준 서비스 |
-| 등록 포트 | 1024 ~ 49151 | RFC 미표준 애플리케이션 |
-| 사설/동적 포트 | 49152 ~ 65535 | 클라이언트 소스 포트로 임의 사용 |
+|:---|:---:|:---|
+| Well-Known | 0~1023 | IANA 표준 서비스 |
+| Registered | 1024~49151 | 일반 애플리케이션 |
+| Dynamic / Private | 49152~65535 | 클라이언트 임시 포트 |
 
 ---
 
 ## 자주 틀리는 부분
 
-❌ TCP가 항상 더 좋은 프로토콜이다 → 서비스 목적에 따라 선택  
-❌ UDP는 오류 발생 시 자동 재전송한다 → 재전송 없음, 애플리케이션이 처리  
-❌ ACK Number는 마지막으로 받은 번호다 → **다음에 받을 Byte 번호**  
-❌ Sequence Number는 Segment 번호다 → **Byte 번호**
+- ❌ TCP가 항상 더 좋은 프로토콜이다 → **서비스 목적에 따라 선택**
+- ❌ UDP는 오류 발생 시 자동 재전송한다 → **재전송은 애플리케이션이 처리**
+- ❌ ACK Number는 마지막으로 받은 번호다 → **다음에 받을 Byte 번호**
+- ❌ Sequence Number는 Segment 번호다 → **Byte 번호**
